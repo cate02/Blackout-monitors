@@ -16,38 +16,51 @@ import java.util.prefs.Preferences;
 
 public class Blackout {
     
-    private JFrame frame;
-    private JButton pop = new JButton("Pop");
+    private static JFrame frame;
+    private static JButton pop = new JButton("Pop");
     private JPopupMenu pmenu = new JPopupMenu();
     private JMenuItem pclose = new JMenuItem("Close");
+    private JMenuItem ptheme = new JMenuItem("Theme");
     private JMenuItem restart = new JMenuItem("Restart");
     private JMenuItem onTop = new JMenuItem("On top✅");
     private Point initialClick;
-    private List<BlackBox> blkList = new ArrayList<BlackBox>();
-    private List<JButton> btnList = new ArrayList<JButton>();
-    private Color black = new Color(0, 0, 0);
+    private static List<BlackBox> blkList = new ArrayList<BlackBox>();
+    private static List<JButton> btnList = new ArrayList<JButton>();
+    private static Color black = new Color(0, 0, 0);
     private Color grayer = new Color(23, 23, 23);
-    private Color grayerer = new Color(11, 11, 11);
+    private static Color grayerer = new Color(11, 11, 11);
     private Color lightBlack = new Color(15, 15, 15);
     private Color lightGrayer = new Color(69, 69, 69);
-    private Color lightGrayerer = new Color(33, 33, 33);
-    private boolean[] isBtnOn;
+    private static Color lightGrayerer = new Color(33, 33, 33);
+    private static boolean[] isBtnOn;
     private boolean isTop = true;
-    private boolean isHovering;
+    private static boolean isHovering;
     private JPopupMenu boxPMenu = new JPopupMenu();
     private JMenuItem fade5s = new JMenuItem("Fade for 5 seconds");
     private JMenuItem fade20s = new JMenuItem("Fade for 20 seconds");
     private JMenuItem fade60s = new JMenuItem("Fade for 60 seconds");
     
+    private static float secondaryColorMult = 1.3f;
+    private static float hoverOppacityAdd = 20;
+    private static float mainOpacity = 10;
+    private static float textOpacity = 10;
+    private static Color backColor = new Color(100, 50, 200);
+    private static Color mainColor;
+    private static Color secondaryColor;
+    private static Color hoverColor;
+    private static Color hoverSecondaryColor;
+    
     private static Preferences preferences;
     private int[] screenBounds = { 0, 0 };
-    private String activatedButtons;
+    private static String activatedButtons;
+    
+    private float contrastPercent = 20f;
     
     public Blackout() {
         preferences = Preferences.userNodeForPackage(Blackout.class);
         screenBounds[0] = preferences.getInt("screenX", 0);
         screenBounds[1] = preferences.getInt("screenY", 0);
-        loadActivatedButtons();
+        
         frame = new JFrame();
         // if frame moved change preferences
         frame.addComponentListener(new ComponentAdapter() {
@@ -59,14 +72,17 @@ public class Blackout {
         });
         
         pop.addActionListener(listener);
+        
     }
     
-    void loadActivatedButtons() {
+    static void loadActivatedButtons() {
         activatedButtons = preferences.get("activatedButtons", "");
         String[] parts = activatedButtons.split(",");
         isBtnOn = new boolean[parts.length];
         for (int i = 0; i < parts.length; i++) {
             isBtnOn[i] = parts[i].equals("1");
+            triggerBlackout(i, isBtnOn[i]);
+            System.out.println(isBtnOn[i] + " " + parts[i]);
         }
         System.out.println("Activated buttons loaded: " + activatedButtons);
     }
@@ -121,9 +137,23 @@ public class Blackout {
             
             blkList.add(blackBox);
         }
-        for (int i = 0; i < blkList.size(); i++) {
-            blkList.get(i).setActive(isBtnOn[i]);
-        }
+        
+        
+        // isbtnon[i]=...
+        
+    }
+    
+    static void triggerBlackout(int i, boolean state) {
+        isBtnOn[i] = state;
+        blkList.get(i).setActive(isBtnOn[i]);
+        updateColors();
+        /*
+        if (isBtnOn[i]) {
+            btnList.get(i).setBackground(mainColor);
+        } else {
+            btnList.get(i).setBackground(secondaryColor);
+        }*/
+        
     }
     
     public void setUpGUI() {
@@ -148,36 +178,16 @@ public class Blackout {
         MouseAdapter mThing2 = new MouseAdapter() {
             public void mouseEntered(MouseEvent e) {
                 isHovering = true;
-                frame.getRootPane().setBorder(BorderFactory.createMatteBorder(15, 2, 2, 2, lightGrayer));
-                int i = 0;
-                for (JButton btn : btnList) {
-                    btn.setForeground(lightGrayer);
-                    if (isBtnOn[i]) {
-                        btn.setBackground(lightBlack);
-                    } else {
-                        btn.setBackground(lightGrayerer);
-                    }
-                    i++;
-                }
-                pop.setForeground(lightGrayer);
-                pop.setBackground(lightBlack);
+                // frame.getRootPane().setBorder(BorderFactory.createMatteBorder(15, 2, 2, 2,
+                // lightGrayer));
+                updateColors();
             }
             
             public void mouseExited(MouseEvent e) {
                 isHovering = false;
-                frame.getRootPane().setBorder(BorderFactory.createMatteBorder(15, 2, 2, 2, grayer));
-                int i = 0;
-                for (JButton btn : btnList) {
-                    btn.setForeground(grayer);
-                    if (isBtnOn[i]) {
-                        btn.setBackground(black);
-                    } else {
-                        btn.setBackground(grayerer);
-                    }
-                    i++;
-                }
-                pop.setForeground(grayer);
-                pop.setBackground(black);
+                // frame.getRootPane().setBorder(BorderFactory.createMatteBorder(15, 2, 2, 2,
+                // grayer));
+                updateColors();
             }
         };
         
@@ -192,11 +202,13 @@ public class Blackout {
         });
         
         pmenu.add(onTop);
-        pmenu.add(restart);
+        pmenu.add(ptheme);
+        // pmenu.add(restart);
         pmenu.add(pclose);
         onTop.addActionListener(listener);
         restart.addActionListener(listener);
         pclose.addActionListener(listener);
+        ptheme.addActionListener(listener);
         frame.setTitle("Screen cover");
         frame.setResizable(false);
         frame.setAlwaysOnTop(true);
@@ -206,21 +218,22 @@ public class Blackout {
         isBtnOn = new boolean[btnList.size()];
         int i = 0;
         for (JButton btn : btnList) {
-            isBtnOn[i] = false;
+            // isBtnOn[i] = false;
             frame.add(btn);
             btn.addMouseListener(mThing2);
-            btn.setBackground(grayerer);
-            btn.setForeground(grayer);
+            // btn.setBackground(grayerer);
+            // btn.setForeground(grayer);
             btn.setFocusable(false);
             btn.setBorderPainted(false);
             btn.setContentAreaFilled(false);
             btn.setOpaque(true);
             i++;
         }
-        frame.getRootPane().setBorder(BorderFactory.createMatteBorder(15, 2, 2, 2, grayer)); // Border
+        // frame.getRootPane().setBorder(BorderFactory.createMatteBorder(15, 2, 2, 2,
+        // grayer)); // Border
         
-        pop.setBackground(black);
-        pop.setForeground(grayer);
+        // pop.setBackground(black);
+        // pop.setForeground(grayer);
         pop.setFocusable(false);
         pop.setBorderPainted(false);
         pop.setContentAreaFilled(false);
@@ -234,7 +247,11 @@ public class Blackout {
     public static void main(String[] args) {
         Blackout box = new Blackout();
         box.setUpBoxes();
+        loadActivatedButtons();
         box.setUpGUI();
+        updateColors();
+        loadActivatedButtons();
+        
     }
     
     ActionListener listener = new ActionListener() {
@@ -245,28 +262,9 @@ public class Blackout {
             
             if (comm.contains("scrn")) {
                 int btnStrnNum = Integer.parseInt(String.valueOf(comm.charAt(comm.length() - 1)));
-                JButton btn = btnList.get(btnStrnNum);
+                triggerBlackout(btnStrnNum, !isBtnOn[btnStrnNum]);
+                saveActivatedButtons();
                 
-                if (!isBtnOn[btnStrnNum]) {
-                    if (isHovering) {
-                        btn.setBackground(lightBlack);
-                    } else {
-                        btn.setBackground(black);
-                    }
-                    // blkList.get(btnStrnNum).setVisible(true);
-                    blkList.get(btnStrnNum).setActive(true);
-                    isBtnOn[btnStrnNum] = true;
-                } else {
-                    if (isHovering) {
-                        btn.setBackground(lightGrayerer);
-                    } else {
-                        btn.setBackground(grayerer);
-                    }
-                    blkList.get(btnStrnNum).setVisible(false);
-                    blkList.get(btnStrnNum).setActive(false);
-                    // isBtnOn[btnStrnNum] = false;
-                }
-                // if comm contains ontop
             } else if (comm.contains("On top")) {
                 if (!isTop) {
                     frame.setAlwaysOnTop(true);
@@ -282,6 +280,9 @@ public class Blackout {
                     frames.setAlwaysOnTop(true);
                     frames.setAlwaysOnTop(false);
                 }
+                
+            } else if (comm.equals("Theme")) {
+                ThemeWindow themeWindow = new ThemeWindow();
             } else if (comm.equals("Close")) {
                 System.exit(0);
             } else if (comm.equals("Restart")) {
@@ -294,7 +295,7 @@ public class Blackout {
             } else if (comm.equals("Fade for 60 seconds")) {
                 System.out.println("Fade for 60 seconds");
             }
-            saveActivatedButtons();
+            
         }
     };
     
@@ -349,6 +350,66 @@ public class Blackout {
             e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+    
+    private static Color changeColor(Color color, float opacity) {
+        // Clamp opacity between 0 and 100
+        opacity = Math.max(0, Math.min(opacity, 100));
+        
+        float blendFactor = opacity / 100f;
+        
+        int r = (int) (color.getRed() + (255 - color.getRed()) * blendFactor);
+        int g = (int) (color.getGreen() + (255 - color.getGreen()) * blendFactor);
+        int b = (int) (color.getBlue() + (255 - color.getBlue()) * blendFactor);
+        
+        return new Color(r, g, b);
+    }
+    
+    static void setNewColors(Color backColor, float secondaryColorMult, float mainOpacity, float textOpacity,
+            float hoverOppacityAdd) {
+        System.out.println(secondaryColorMult + " " + mainOpacity + " " + textOpacity + " " + hoverOppacityAdd);
+        Blackout.backColor = backColor;
+        Blackout.secondaryColorMult = secondaryColorMult;
+        Blackout.mainOpacity = mainOpacity;
+        Blackout.textOpacity = textOpacity;
+        Blackout.hoverOppacityAdd = hoverOppacityAdd;
+        
+        updateColors();
+    }
+    
+    
+    static void updateColors() {
+        
+        mainColor = changeColor(backColor, mainOpacity);
+        secondaryColor = changeColor(mainColor, mainOpacity * secondaryColorMult);
+        hoverColor = changeColor(mainColor, mainOpacity + hoverOppacityAdd);
+        hoverSecondaryColor = changeColor(secondaryColor, (mainOpacity + hoverOppacityAdd) * secondaryColorMult);
+        Color textColor = changeColor(secondaryColor, textOpacity);
+        
+        
+        Color color1 = mainColor; // lighter
+        Color color2 = secondaryColor; // darker
+        Color color3 = textColor; // lightest, border+text
+        if (isHovering) {
+            color1 = changeColor(mainColor, hoverOppacityAdd);
+            color2 = changeColor(mainColor, hoverOppacityAdd * secondaryColorMult);
+            color3 = changeColor(textColor, hoverOppacityAdd);
+        }
+        frame.getRootPane().setBorder(BorderFactory.createMatteBorder(15, 2, 2, 2, color1));
+        pop.setForeground(color2);
+        pop.setBackground(color1);
+        
+        for (int i = 0; i < btnList.size(); i++) {
+            blkList.get(i).setColor(backColor);
+            JButton btn = btnList.get(i);
+            if (isBtnOn[i]) {
+                btn.setForeground(color2);
+                btn.setBackground(color1);
+            } else {
+                btn.setForeground(color1);
+                btn.setBackground(color2);
+            }
         }
     }
 }
