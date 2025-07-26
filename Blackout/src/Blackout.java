@@ -50,6 +50,8 @@ public class Blackout {
     private static Color hoverColor;
     private static Color hoverSecondaryColor;
     
+    private static boolean inverseOppacity = false; // Flag to toggle inverse opacity
+    
     private static Preferences preferences;
     private int[] screenBounds = { 0, 0 };
     private static String activatedButtons;
@@ -70,6 +72,10 @@ public class Blackout {
                 preferences.putInt("screenY", frame.getY());
             }
         });
+        
+        // init themewindow
+        // ThemeWindow themeWindow = new ThemeWindow();
+        // themeWindow.dispose();
         
         pop.addActionListener(listener);
         
@@ -353,6 +359,11 @@ public class Blackout {
         }
     }
     
+    public static void setInverseOpacity(boolean inverse) {
+        inverseOppacity = inverse;
+        updateColors();
+    }
+    
     private static Color changeColor(Color color, float opacity) {
         // Clamp opacity between 0 and 100
         opacity = Math.max(0, Math.min(opacity, 100));
@@ -362,6 +373,12 @@ public class Blackout {
         int r = (int) (color.getRed() + (255 - color.getRed()) * blendFactor);
         int g = (int) (color.getGreen() + (255 - color.getGreen()) * blendFactor);
         int b = (int) (color.getBlue() + (255 - color.getBlue()) * blendFactor);
+        
+        if (inverseOppacity) {
+            r = (int) (color.getRed() - (color.getRed() * blendFactor));
+            g = (int) (color.getGreen() - (color.getGreen() * blendFactor));
+            b = (int) (color.getBlue() - (color.getBlue() * blendFactor));
+        }
         
         return new Color(r, g, b);
     }
@@ -385,29 +402,30 @@ public class Blackout {
         secondaryColor = changeColor(mainColor, mainOpacity * secondaryColorMult);
         hoverColor = changeColor(mainColor, mainOpacity + hoverOppacityAdd);
         hoverSecondaryColor = changeColor(secondaryColor, (mainOpacity + hoverOppacityAdd) * secondaryColorMult);
-        Color textColor = changeColor(secondaryColor, textOpacity);
+        Color textColor = changeColor(backColor, textOpacity);
         
         
         Color color1 = mainColor; // lighter
         Color color2 = secondaryColor; // darker
         Color color3 = textColor; // lightest, border+text
         if (isHovering) {
-            color1 = changeColor(mainColor, hoverOppacityAdd);
-            color2 = changeColor(mainColor, hoverOppacityAdd * secondaryColorMult);
-            color3 = changeColor(textColor, hoverOppacityAdd);
+            color1 = changeColor(backColor, mainOpacity * hoverOppacityAdd);
+            color2 = changeColor(mainColor, mainOpacity * secondaryColorMult * hoverOppacityAdd);// *
+                                                                                                 // secondaryColorMult);
+            color3 = changeColor(backColor, textOpacity * hoverOppacityAdd);
         }
-        frame.getRootPane().setBorder(BorderFactory.createMatteBorder(15, 2, 2, 2, color1));
-        pop.setForeground(color2);
+        frame.getRootPane().setBorder(BorderFactory.createMatteBorder(15, 2, 2, 2, color3));
+        pop.setForeground(color3);
         pop.setBackground(color1);
         
         for (int i = 0; i < btnList.size(); i++) {
             blkList.get(i).setColor(backColor);
             JButton btn = btnList.get(i);
             if (isBtnOn[i]) {
-                btn.setForeground(color2);
+                btn.setForeground(color3);
                 btn.setBackground(color1);
             } else {
-                btn.setForeground(color1);
+                btn.setForeground(color3);
                 btn.setBackground(color2);
             }
         }
