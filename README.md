@@ -10,5 +10,5 @@ Right click the border of the gui to close the app
 Press space on a selected box to center the GUI incase you lost it
 
 Known issues:
--sometimes the windows taskbar pops up ontop of the boxes
--some crappy old games when loading/going into fullscreen will mess with your monitors resolutions, which also distorts the boxes
+- sometimes the windows taskbar pops up ontop of the boxes
+- some crappy old games when loading/going into fullscreen will mess with your monitors resolutions, which also distorts the boxes
