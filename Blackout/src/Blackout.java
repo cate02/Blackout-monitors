@@ -391,15 +391,18 @@ public class Blackout {
         return new Color(r, g, b);
     }
     
-    static void setNewColors(Color backColor, float secondaryColorMult, float mainOpacity, float textOpacity,
-            float hoverOppacityAdd) {
-        System.out.println(secondaryColorMult + " " + mainOpacity + " " + textOpacity + " " + hoverOppacityAdd);
-        Blackout.backColor = backColor;
+    static void setNewColors(float secondaryColorMult, float mainOpacity, float textOpacity, float hoverOppacityAdd) {
+        // System.out.println(secondaryColorMult + " " + mainOpacity + " " + textOpacity
+        // + " " + hoverOppacityAdd);
         Blackout.secondaryColorMult = secondaryColorMult;
         Blackout.mainOpacity = mainOpacity;
         Blackout.textOpacity = textOpacity;
         Blackout.hoverOppacityAdd = hoverOppacityAdd;
-        
+        updateColors();
+    }
+    
+    static void setNewMainColor(Color backColor) {
+        Blackout.backColor = backColor;
         updateColors();
     }
     

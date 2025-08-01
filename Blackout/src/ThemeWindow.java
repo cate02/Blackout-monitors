@@ -5,6 +5,11 @@ import javax.swing.event.ChangeListener;
 
 public class ThemeWindow extends JFrame {
 	
+	// Holder for singleton instance
+	private static class ThemeWindowHolder {
+		private static ThemeWindow INSTANCE = null;
+	}
+	
 	private JColorChooser colorChooser;
 	private static JSlider mainOppacitySlider = new JSlider(0, 20, 10);
 	private static JSlider textOppacitySlider = new JSlider(0, 100, 30);
@@ -37,24 +42,30 @@ public class ThemeWindow extends JFrame {
 		JPanel sliderPanel = new JPanel(new GridLayout(5, 2, 10, 10));
 		
 		ChangeListener sliderListener = e -> {
-			System.out.println(mainColor);
-			mainColor = colorChooser.getColor();
-			System.out.println("aaaa: " + mainColor);
+			// Color newMainColor=colorChooser.getColor();
+			// System.out.println("ccc " + mainColor+" "+newMainColor);
+			// mainColor = newMainColor;
 			float secondaryColorMult = secondaryColorMultSlider.getValue() / 100f;
 			float mainOpacity = mainOppacitySlider.getValue();
 			float textOpacity = textOppacitySlider.getValue();
 			float hoverOppacityAdd = hoverOppacityAddSlider.getValue();
 			hoverOppacityAdd /= 10f;
 			
-			Blackout.setNewColors(mainColor, secondaryColorMult, mainOpacity, textOpacity, hoverOppacityAdd);
-			preferences.putInt("mainColor", mainColor.getRGB());
-			System.out.println("Main color set to: " + mainColor);
+			Blackout.setNewColors(secondaryColorMult, mainOpacity, textOpacity, hoverOppacityAdd);
+			
 			preferences.putFloat("secondaryColorMult", secondaryColorMult);
 			preferences.putFloat("mainOpacity", mainOpacity);
 			preferences.putFloat("textOpacity", textOpacity);
 			preferences.putFloat("hoverOppacityAdd", hoverOppacityAdd);
 		};
-		colorChooser.getSelectionModel().addChangeListener(sliderListener);
+		// colorChooser.getSelectionModel().addChangeListener(sliderListener);
+		colorChooser.getSelectionModel().addChangeListener(ev -> {
+			mainColor = colorChooser.getColor();
+			Blackout.setNewMainColor(mainColor);
+			preferences.putInt("mainColor", mainColor.getRGB());
+			System.out.println("Main color set to: " + mainColor);
+			// sync mainColor / preferences here
+		});
 		mainOppacitySlider.addChangeListener(sliderListener);
 		textOppacitySlider.addChangeListener(sliderListener);
 		hoverOppacityAddSlider.addChangeListener(sliderListener);
@@ -64,13 +75,6 @@ public class ThemeWindow extends JFrame {
 			inverseOppacity = inverseOpacityCheckbox.isSelected();
 			Blackout.setInverseOpacity(inverseOppacity);
 			preferences.putBoolean("inverseOpacity", inverseOppacity);
-		});
-		// when colorpicker tab changed (hsv rgb etc) remember preference tab
-		colorChooser.getSelectionModel().addChangeListener(e -> {
-			Color selectedColor = colorChooser.getColor();
-			mainColor = selectedColor;
-			System.out.println("Selected color: " + selectedColor);
-			preferences.putInt("mainColor", selectedColor.getRGB());
 		});
 		
 		sliderPanel.add(new JLabel("Inverse Opacity:"));
@@ -90,6 +94,28 @@ public class ThemeWindow extends JFrame {
 		setSize(600, 500);
 		setLocationRelativeTo(null); // Center on screen
 		setVisible(true);
+		
+		// on close close
+		// Ensure only one instance
+		if (ThemeWindowHolder.INSTANCE != null) {
+			ThemeWindowHolder.INSTANCE.toFront();
+			dispose();
+			return;
+		}
+		ThemeWindowHolder.INSTANCE = this;
+		
+		addWindowListener(new java.awt.event.WindowAdapter() {
+			@Override
+			public void windowClosing(java.awt.event.WindowEvent e) {
+				ThemeWindowHolder.INSTANCE = null;
+				dispose();
+			}
+			
+			@Override
+			public void windowClosed(java.awt.event.WindowEvent e) {
+				ThemeWindowHolder.INSTANCE = null;
+			}
+		});
 	}
 	
 	public static void loadPrefs() {
@@ -112,6 +138,7 @@ public class ThemeWindow extends JFrame {
 		inverseOpacityCheckbox.setSelected(inverseOppacity);
 		
 		Blackout.setInverseOpacity(inverseOppacity);
-		Blackout.setNewColors(mainColor, secondaryColorMult, mainOpacity, textOpacity, hoverOppacityAdd);
+		Blackout.setNewColors(secondaryColorMult, mainOpacity, textOpacity, hoverOppacityAdd);
+		Blackout.setNewMainColor(mainColor);
 	}
 }
