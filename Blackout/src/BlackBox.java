@@ -21,7 +21,6 @@ public class BlackBox extends JFrame {
 	public void setColor(Color newColor) {
 		color = newColor;
 		getContentPane().setBackground(color);
-		
 	}
 	
 	public void setActive(Boolean active) {

@@ -4,13 +4,14 @@
 
 import java.awt.*;
 import javax.swing.*;
-import javax.swing.event.SwingPropertyChangeSupport;
 
 import java.awt.event.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.net.URISyntaxException;
 import java.util.prefs.Preferences;
 
@@ -26,12 +27,6 @@ public class Blackout {
     private Point initialClick;
     private static List<BlackBox> blkList = new ArrayList<BlackBox>();
     private static List<JButton> btnList = new ArrayList<JButton>();
-    private static Color black = new Color(0, 0, 0);
-    private Color grayer = new Color(23, 23, 23);
-    private static Color grayerer = new Color(11, 11, 11);
-    private Color lightBlack = new Color(15, 15, 15);
-    private Color lightGrayer = new Color(69, 69, 69);
-    private static Color lightGrayerer = new Color(33, 33, 33);
     private static boolean[] isBtnOn;
     private boolean isTop = true;
     private static boolean isHovering;
@@ -47,8 +42,6 @@ public class Blackout {
     private static Color backColor = new Color(100, 50, 200);
     private static Color mainColor;
     private static Color secondaryColor;
-    private static Color hoverColor;
-    private static Color hoverSecondaryColor;
     
     private static boolean inverseOppacity = false; // Flag to toggle inverse opacity
     
@@ -105,61 +98,86 @@ public class Blackout {
         System.out.println("Activated buttons saved: " + activatedButtons);
     }
     
-    public void setUpBoxes() {
+    private void rebuildBoxes() {
+        // frame.removeAll();
+        btnList.clear();
+        blkList.clear();
+        
         GraphicsEnvironment gEnvironment = GraphicsEnvironment.getLocalGraphicsEnvironment();
         GraphicsDevice[] devices = gEnvironment.getScreenDevices();
-        // Organising buttons appropiately
-        while (notSorted(devices)) {
-            for (int iii = 0; iii < devices.length - 1; iii++) {
-                if (devices[iii].getDefaultConfiguration().getBounds().getX() > devices[iii + 1]
-                        .getDefaultConfiguration().getBounds().getX()) {
-                    GraphicsDevice temp = devices[iii];
-                    devices[iii] = devices[iii + 1];
-                    devices[iii + 1] = temp;
-                }
-            }
-        }
+        Arrays.sort(devices, Comparator.comparingInt(d -> d.getDefaultConfiguration().getBounds().x));
         
         for (int i = 0; i < devices.length; i++) {
             String scrnNum = "scrn" + i;
-            btnList.add(new JButton(scrnNum));
-            btnList.get(i).addActionListener(listener);
-            // Add the button to the Frame
-            frame.add(btnList.get(i));
-            // Get the rectange of monitor
+            JButton btn = new JButton(scrnNum);
+            btn.addActionListener(listener);
+            btnList.add(btn);
+            frame.add(btn);
+            
             Rectangle monitor = devices[i].getDefaultConfiguration().getBounds();
             BlackBox blackBox = new BlackBox();
             blackBox.create(monitor);
             blackBox.setColor(Color.BLACK);
-            MouseAdapter tempMThing = new MouseAdapter() {
+            blackBox.addMouseListener(new MouseAdapter() {
                 public void mouseClicked(MouseEvent e) {
                     if (e.getButton() == MouseEvent.BUTTON2) {
                         BlackBox sourceBox = (BlackBox) e.getSource();
-                        sourceBox.setActive(!sourceBox.isActive);
+                        int btnStrnNum = blkList.indexOf(sourceBox);
+                        if (btnStrnNum != -1) {
+                            triggerBlackout(btnStrnNum, !isBtnOn[btnStrnNum]);
+                            saveActivatedButtons();
+                        }
                     }
                 }
-            };
-            blackBox.addMouseListener(tempMThing);
-            
+                
+                // when space pressed box selected frame.setLocation(screenBounds[0],
+                // screenBounds[1]);
+                // if space pressed
+                
+            });
+            blackBox.addKeyListener(new KeyAdapter() {
+                @Override
+                public void keyPressed(KeyEvent e) {
+                    if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+                        System.out.println("Space pressed on " + blackBox.getName());
+                        frame.setLocation(screenBounds[0], screenBounds[1]);
+                        // set frame location to center of selected box
+                        Rectangle bounds = blackBox.getBounds();
+                        int centerX = bounds.x + bounds.width / 2 - frame.getWidth() / 2;
+                        int centerY = bounds.y + bounds.height / 2 - frame.getHeight() / 2;
+                        frame.setLocation(centerX, centerY);
+                        System.out.println(frame.getLocation());
+                        frame.setVisible(true);
+                        
+                        // saveActivatedButtons();
+                    }
+                }
+            });
             blkList.add(blackBox);
         }
         
         
-        // isbtnon[i]=...
         
+        
+        frame.revalidate();
+        frame.repaint();
+    }
+    
+    public void setUpBoxes() {
+        rebuildBoxes();
+        // attempting to fix when games fuck resoution like in sexy hiking
+        // MonitorWatcher watcher = new MonitorWatcher(this::rebuildBoxes);
+        // watcher.start();
+        
+        GraphicsEnvironment gEnvironment = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        GraphicsDevice[] devices = gEnvironment.getScreenDevices();
+        Arrays.sort(devices, Comparator.comparingInt(d -> d.getDefaultConfiguration().getBounds().x));
     }
     
     static void triggerBlackout(int i, boolean state) {
         isBtnOn[i] = state;
         blkList.get(i).setActive(isBtnOn[i]);
         updateColors();
-        /*
-        if (isBtnOn[i]) {
-            btnList.get(i).setBackground(mainColor);
-        } else {
-            btnList.get(i).setBackground(secondaryColor);
-        }*/
-        
     }
     
     public void setUpGUI() {
@@ -184,15 +202,11 @@ public class Blackout {
         MouseAdapter mThing2 = new MouseAdapter() {
             public void mouseEntered(MouseEvent e) {
                 isHovering = true;
-                // frame.getRootPane().setBorder(BorderFactory.createMatteBorder(15, 2, 2, 2,
-                // lightGrayer));
                 updateColors();
             }
             
             public void mouseExited(MouseEvent e) {
                 isHovering = false;
-                // frame.getRootPane().setBorder(BorderFactory.createMatteBorder(15, 2, 2, 2,
-                // grayer));
                 updateColors();
             }
         };
@@ -224,22 +238,15 @@ public class Blackout {
         isBtnOn = new boolean[btnList.size()];
         int i = 0;
         for (JButton btn : btnList) {
-            // isBtnOn[i] = false;
             frame.add(btn);
             btn.addMouseListener(mThing2);
-            // btn.setBackground(grayerer);
-            // btn.setForeground(grayer);
             btn.setFocusable(false);
             btn.setBorderPainted(false);
             btn.setContentAreaFilled(false);
             btn.setOpaque(true);
             i++;
         }
-        // frame.getRootPane().setBorder(BorderFactory.createMatteBorder(15, 2, 2, 2,
-        // grayer)); // Border
         
-        // pop.setBackground(black);
-        // pop.setForeground(grayer);
         pop.setFocusable(false);
         pop.setBorderPainted(false);
         pop.setContentAreaFilled(false);
@@ -255,6 +262,7 @@ public class Blackout {
         box.setUpBoxes();
         loadActivatedButtons();
         box.setUpGUI();
+        ThemeWindow.loadPrefs();
         updateColors();
         loadActivatedButtons();
         
@@ -400,8 +408,9 @@ public class Blackout {
         
         mainColor = changeColor(backColor, mainOpacity);
         secondaryColor = changeColor(mainColor, mainOpacity * secondaryColorMult);
-        hoverColor = changeColor(mainColor, mainOpacity + hoverOppacityAdd);
-        hoverSecondaryColor = changeColor(secondaryColor, (mainOpacity + hoverOppacityAdd) * secondaryColorMult);
+        // hoverColor = changeColor(mainColor, mainOpacity + hoverOppacityAdd);
+        // hoverSecondaryColor = changeColor(secondaryColor, (mainOpacity +
+        // hoverOppacityAdd) * secondaryColorMult);
         Color textColor = changeColor(backColor, textOpacity);
         
         

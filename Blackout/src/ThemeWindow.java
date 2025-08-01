@@ -18,7 +18,7 @@ public class ThemeWindow extends JFrame {
 	private static Preferences preferences;
 	
 	public ThemeWindow() {
-		preferences = Preferences.userNodeForPackage(Blackout.class);
+		
 		loadPrefs();
 		
 		
@@ -65,6 +65,13 @@ public class ThemeWindow extends JFrame {
 			Blackout.setInverseOpacity(inverseOppacity);
 			preferences.putBoolean("inverseOpacity", inverseOppacity);
 		});
+		// when colorpicker tab changed (hsv rgb etc) remember preference tab
+		colorChooser.getSelectionModel().addChangeListener(e -> {
+			Color selectedColor = colorChooser.getColor();
+			mainColor = selectedColor;
+			System.out.println("Selected color: " + selectedColor);
+			preferences.putInt("mainColor", selectedColor.getRGB());
+		});
 		
 		sliderPanel.add(new JLabel("Inverse Opacity:"));
 		sliderPanel.add(inverseOpacityCheckbox);
@@ -86,6 +93,7 @@ public class ThemeWindow extends JFrame {
 	}
 	
 	public static void loadPrefs() {
+		preferences = Preferences.userNodeForPackage(Blackout.class);
 		// Mask to 0xFFFFFFFF to ensure only 8 hex digits (ARGB)
 		int mainColorRGB = preferences.getInt("mainColor", Color.BLACK.getRGB());
 		mainColor = new Color(mainColorRGB, true);
@@ -95,6 +103,7 @@ public class ThemeWindow extends JFrame {
 		float hoverOppacityAdd = preferences.getFloat("hoverOppacityAdd", 0.3f);
 		inverseOppacity = preferences.getBoolean("inverseOpacity", false);
 		
+		
 		mainOppacitySlider.setValue((int) (mainOpacity));
 		textOppacitySlider.setValue((int) (textOpacity));
 		hoverOppacityAddSlider.setValue((int) (hoverOppacityAdd * 10));
@@ -102,6 +111,7 @@ public class ThemeWindow extends JFrame {
 		
 		inverseOpacityCheckbox.setSelected(inverseOppacity);
 		
+		Blackout.setInverseOpacity(inverseOppacity);
 		Blackout.setNewColors(mainColor, secondaryColorMult, mainOpacity, textOpacity, hoverOppacityAdd);
 	}
 }
