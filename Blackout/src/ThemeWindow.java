@@ -13,8 +13,8 @@ public class ThemeWindow extends JFrame {
 	private JColorChooser colorChooser;
 	private static JSlider mainOppacitySlider = new JSlider(0, 20, 10);
 	private static JSlider textOppacitySlider = new JSlider(0, 100, 30);
-	private static JSlider hoverOppacityAddSlider = new JSlider(10, 100, 30);
-	private static JSlider secondaryColorMultSlider = new JSlider(0, 200, 100);
+	private static JSlider hoverOpacityMultSlider = new JSlider(10, 100, 30);
+	private static JSlider secondaryOpacitySlider = new JSlider(0, 20, 15);
 	public static boolean inverseOppacity = false; // Flag to toggle inverse opacity
 	private static JCheckBox inverseOpacityCheckbox = new JCheckBox("Inverse Opacity", inverseOppacity);
 	
@@ -30,6 +30,7 @@ public class ThemeWindow extends JFrame {
 		Blackout.setInverseOpacity(inverseOppacity);
 		setTitle("Color Picker with Sliders");
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+		setAlwaysOnTop(true);
 		setLayout(new BorderLayout());
 		
 		// Color chooser
@@ -45,18 +46,18 @@ public class ThemeWindow extends JFrame {
 			// Color newMainColor=colorChooser.getColor();
 			// System.out.println("ccc " + mainColor+" "+newMainColor);
 			// mainColor = newMainColor;
-			float secondaryColorMult = secondaryColorMultSlider.getValue() / 100f;
+			float secondaryOpacity = secondaryOpacitySlider.getValue();
 			float mainOpacity = mainOppacitySlider.getValue();
 			float textOpacity = textOppacitySlider.getValue();
-			float hoverOppacityAdd = hoverOppacityAddSlider.getValue();
-			hoverOppacityAdd /= 10f;
+			float hoverOpacityMult = hoverOpacityMultSlider.getValue();
+			hoverOpacityMult /= 10f;
 			
-			Blackout.setNewColors(secondaryColorMult, mainOpacity, textOpacity, hoverOppacityAdd);
+			Blackout.setNewColors(secondaryOpacity, mainOpacity, textOpacity, hoverOpacityMult);
 			
-			preferences.putFloat("secondaryColorMult", secondaryColorMult);
+			preferences.putFloat("secondaryOpacity", secondaryOpacity);
 			preferences.putFloat("mainOpacity", mainOpacity);
 			preferences.putFloat("textOpacity", textOpacity);
-			preferences.putFloat("hoverOppacityAdd", hoverOppacityAdd);
+			preferences.putFloat("hoverOppacityAdd", hoverOpacityMult);
 		};
 		// colorChooser.getSelectionModel().addChangeListener(sliderListener);
 		colorChooser.getSelectionModel().addChangeListener(ev -> {
@@ -68,8 +69,8 @@ public class ThemeWindow extends JFrame {
 		});
 		mainOppacitySlider.addChangeListener(sliderListener);
 		textOppacitySlider.addChangeListener(sliderListener);
-		hoverOppacityAddSlider.addChangeListener(sliderListener);
-		secondaryColorMultSlider.addChangeListener(sliderListener);
+		hoverOpacityMultSlider.addChangeListener(sliderListener);
+		secondaryOpacitySlider.addChangeListener(sliderListener);
 		
 		inverseOpacityCheckbox.addActionListener(e -> {
 			inverseOppacity = inverseOpacityCheckbox.isSelected();
@@ -82,12 +83,13 @@ public class ThemeWindow extends JFrame {
 		
 		sliderPanel.add(new JLabel("Main Opacity:"));
 		sliderPanel.add(mainOppacitySlider);
+		sliderPanel.add(new JLabel("Secondary Opacity:"));
+		sliderPanel.add(secondaryOpacitySlider);
 		sliderPanel.add(new JLabel("Text Opacity:"));
 		sliderPanel.add(textOppacitySlider);
 		sliderPanel.add(new JLabel("Hover Opacity Add:"));
-		sliderPanel.add(hoverOppacityAddSlider);
-		sliderPanel.add(new JLabel("Secondary Color Multiplier:"));
-		sliderPanel.add(secondaryColorMultSlider);
+		sliderPanel.add(hoverOpacityMultSlider);
+		
 		
 		add(sliderPanel, BorderLayout.CENTER);
 		
@@ -123,7 +125,7 @@ public class ThemeWindow extends JFrame {
 		// Mask to 0xFFFFFFFF to ensure only 8 hex digits (ARGB)
 		int mainColorRGB = preferences.getInt("mainColor", Color.BLACK.getRGB());
 		mainColor = new Color(mainColorRGB, true);
-		float secondaryColorMult = preferences.getFloat("secondaryColorMult", 1.0f);
+		float secondaryOpacity = preferences.getFloat("secondaryOpacity", 1.0f);
 		float mainOpacity = preferences.getFloat("mainOpacity", 1.0f);
 		float textOpacity = preferences.getFloat("textOpacity", 0.3f);
 		float hoverOppacityAdd = preferences.getFloat("hoverOppacityAdd", 0.3f);
@@ -132,13 +134,13 @@ public class ThemeWindow extends JFrame {
 		
 		mainOppacitySlider.setValue((int) (mainOpacity));
 		textOppacitySlider.setValue((int) (textOpacity));
-		hoverOppacityAddSlider.setValue((int) (hoverOppacityAdd * 10));
-		secondaryColorMultSlider.setValue((int) (secondaryColorMult * 100));
+		hoverOpacityMultSlider.setValue((int) (hoverOppacityAdd * 10));
+		secondaryOpacitySlider.setValue((int) (secondaryOpacity));
 		
 		inverseOpacityCheckbox.setSelected(inverseOppacity);
 		
 		Blackout.setInverseOpacity(inverseOppacity);
-		Blackout.setNewColors(secondaryColorMult, mainOpacity, textOpacity, hoverOppacityAdd);
+		Blackout.setNewColors(secondaryOpacity, mainOpacity, textOpacity, hoverOppacityAdd);
 		Blackout.setNewMainColor(mainColor);
 	}
 }

@@ -35,10 +35,10 @@ public class Blackout {
     private JMenuItem fade20s = new JMenuItem("Fade for 20 seconds");
     private JMenuItem fade60s = new JMenuItem("Fade for 60 seconds");
     
-    private static float secondaryColorMult = 1.3f;
-    private static float hoverOppacityAdd = 20;
+    private static float hoveryOpacityMult = 20;
     private static float mainOpacity = 10;
-    private static float textOpacity = 10;
+    private static float textOpacity = 30;
+    private static float secondaryOpacity = 20;
     private static Color backColor = new Color(100, 50, 200);
     private static Color mainColor;
     private static Color secondaryColor;
@@ -391,13 +391,13 @@ public class Blackout {
         return new Color(r, g, b);
     }
     
-    static void setNewColors(float secondaryColorMult, float mainOpacity, float textOpacity, float hoverOppacityAdd) {
+    static void setNewColors(float secondaryOpacity, float mainOpacity, float textOpacity, float hoverOpacityMult) {
         // System.out.println(secondaryColorMult + " " + mainOpacity + " " + textOpacity
         // + " " + hoverOppacityAdd);
-        Blackout.secondaryColorMult = secondaryColorMult;
+        Blackout.secondaryOpacity = secondaryOpacity;
         Blackout.mainOpacity = mainOpacity;
         Blackout.textOpacity = textOpacity;
-        Blackout.hoverOppacityAdd = hoverOppacityAdd;
+        Blackout.hoveryOpacityMult = hoverOpacityMult;
         updateColors();
     }
     
@@ -410,7 +410,7 @@ public class Blackout {
     static void updateColors() {
         
         mainColor = changeColor(backColor, mainOpacity);
-        secondaryColor = changeColor(mainColor, mainOpacity * secondaryColorMult);
+        secondaryColor = changeColor(backColor, secondaryOpacity);
         // hoverColor = changeColor(mainColor, mainOpacity + hoverOppacityAdd);
         // hoverSecondaryColor = changeColor(secondaryColor, (mainOpacity +
         // hoverOppacityAdd) * secondaryColorMult);
@@ -421,10 +421,9 @@ public class Blackout {
         Color color2 = secondaryColor; // darker
         Color color3 = textColor; // lightest, border+text
         if (isHovering) {
-            color1 = changeColor(backColor, mainOpacity * hoverOppacityAdd);
-            color2 = changeColor(mainColor, mainOpacity * secondaryColorMult * hoverOppacityAdd);// *
-                                                                                                 // secondaryColorMult);
-            color3 = changeColor(backColor, textOpacity * hoverOppacityAdd);
+            color1 = changeColor(backColor, mainOpacity * hoveryOpacityMult);
+            color2 = changeColor(backColor, secondaryOpacity * hoveryOpacityMult);
+            color3 = changeColor(backColor, textOpacity * hoveryOpacityMult);
         }
         frame.getRootPane().setBorder(BorderFactory.createMatteBorder(15, 2, 2, 2, color3));
         pop.setForeground(color3);
