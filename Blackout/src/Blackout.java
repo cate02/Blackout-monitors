@@ -117,7 +117,6 @@ public class Blackout {
             Rectangle monitor = devices[i].getDefaultConfiguration().getBounds();
             BlackBox blackBox = new BlackBox();
             blackBox.create(monitor);
-            blackBox.setColor(Color.BLACK);
             blackBox.addMouseListener(new MouseAdapter() {
                 public void mouseClicked(MouseEvent e) {
                     if (e.getButton() == MouseEvent.BUTTON2) {
@@ -140,14 +139,13 @@ public class Blackout {
                 public void keyPressed(KeyEvent e) {
                     if (e.getKeyCode() == KeyEvent.VK_SPACE) {
                         System.out.println("Space pressed on " + blackBox.getName());
-                        frame.setLocation(screenBounds[0], screenBounds[1]);
                         // set frame location to center of selected box
                         Rectangle bounds = blackBox.getBounds();
                         int centerX = bounds.x + bounds.width / 2 - frame.getWidth() / 2;
                         int centerY = bounds.y + bounds.height / 2 - frame.getHeight() / 2;
                         frame.setLocation(centerX, centerY);
+                        // ThemeWindow.saveLocation(centerX, centerY);
                         System.out.println(frame.getLocation());
-                        frame.setVisible(true);
                         
                         // saveActivatedButtons();
                     }
@@ -176,6 +174,7 @@ public class Blackout {
     
     static void triggerBlackout(int i, boolean state) {
         isBtnOn[i] = state;
+        
         blkList.get(i).setActive(isBtnOn[i]);
         updateColors();
     }
@@ -254,18 +253,16 @@ public class Blackout {
         frame.add(pop);
         frame.setUndecorated(true);
         frame.pack();
-        frame.setVisible(true);
     }
     
     public static void main(String[] args) {
         Blackout box = new Blackout();
+        setNewMainColor(ThemeWindow.getMainColor());
         box.setUpBoxes();
-        loadActivatedButtons();
         box.setUpGUI();
         ThemeWindow.loadPrefs();
-        updateColors();
         loadActivatedButtons();
-        
+        frame.setVisible(true);
     }
     
     ActionListener listener = new ActionListener() {

@@ -1,6 +1,7 @@
 import java.awt.*;
 import java.util.prefs.Preferences;
 import javax.swing.*;
+import javax.swing.colorchooser.AbstractColorChooserPanel;
 import javax.swing.event.ChangeListener;
 
 public class ThemeWindow extends JFrame {
@@ -23,8 +24,26 @@ public class ThemeWindow extends JFrame {
 	private static Preferences preferences;
 	
 	public ThemeWindow() {
-		
 		loadPrefs();
+		
+		setSize(preferences.getInt("themeWidth", 600), preferences.getInt("themeHeight", 500));
+		setLocation(preferences.getInt("themeScreenX", 0), preferences.getInt("themeScreenY", 0));
+		
+		addComponentListener(new java.awt.event.ComponentAdapter() {
+			@Override
+			public void componentMoved(java.awt.event.ComponentEvent e) {
+				preferences.putInt("themeScreenX", getX());
+				preferences.putInt("themeScreenY", getY());
+			}
+			
+			@Override
+			public void componentResized(java.awt.event.ComponentEvent e) {
+				preferences.putInt("themeWidth", getWidth());
+				preferences.putInt("themeHeight", getHeight());
+			}
+		});
+		
+		
 		
 		
 		Blackout.setInverseOpacity(inverseOppacity);
@@ -39,8 +58,25 @@ public class ThemeWindow extends JFrame {
 		colorChooser.setColor(mainColor);
 		add(colorChooser, BorderLayout.NORTH);
 		
-		// Panel for sliders
-		JPanel sliderPanel = new JPanel(new GridLayout(5, 2, 10, 10));
+		
+		
+		for (AbstractColorChooserPanel panel : colorChooser.getChooserPanels()) {
+			switch (panel.getDisplayName()) {
+				case "Swatches":
+					colorChooser.removeChooserPanel(panel);
+					break;
+				case "HSV":
+					colorChooser.removeChooserPanel(panel);
+					break;
+			}
+			// if (panel.getDisplayName().equals("Swatches")) {
+			// colorChooser.removeChooserPanel(panel);
+			// }
+		}
+		colorChooser.setPreviewPanel(new JPanel());
+		
+		
+		
 		
 		ChangeListener sliderListener = e -> {
 			// Color newMainColor=colorChooser.getColor();
@@ -78,23 +114,69 @@ public class ThemeWindow extends JFrame {
 			preferences.putBoolean("inverseOpacity", inverseOppacity);
 		});
 		
-		sliderPanel.add(new JLabel("Inverse Opacity:"));
-		sliderPanel.add(inverseOpacityCheckbox);
 		
-		sliderPanel.add(new JLabel("Main Opacity:"));
-		sliderPanel.add(mainOppacitySlider);
-		sliderPanel.add(new JLabel("Secondary Opacity:"));
-		sliderPanel.add(secondaryOpacitySlider);
-		sliderPanel.add(new JLabel("Text Opacity:"));
-		sliderPanel.add(textOppacitySlider);
-		sliderPanel.add(new JLabel("Hover Opacity Add:"));
-		sliderPanel.add(hoverOpacityMultSlider);
+		
+		
+		JPanel sliderPanel = new JPanel(new GridBagLayout());
+		GridBagConstraints gbc = new GridBagConstraints();
+		gbc.insets = new Insets(5, 10, 5, 10); // top, left, bottom, right padding
+		gbc.fill = GridBagConstraints.HORIZONTAL;
+		gbc.weightx = 1.0;
+		
+		int row = 0;
+		
+		// Row 1: Inverse Opacity (label + checkbox)
+		gbc.gridx = 0;
+		gbc.gridy = row;
+		gbc.anchor = GridBagConstraints.WEST;
+		sliderPanel.add(new JLabel("Inverse Opacity:"), gbc);
+		gbc.gridx = 1;
+		gbc.anchor = GridBagConstraints.EAST;
+		sliderPanel.add(inverseOpacityCheckbox, gbc);
+		row++;
+		
+		// Row 2: Main Opacity
+		gbc.gridx = 0;
+		gbc.gridy = row;
+		gbc.anchor = GridBagConstraints.WEST;
+		sliderPanel.add(new JLabel("Main Opacity:"), gbc);
+		gbc.gridx = 1;
+		gbc.anchor = GridBagConstraints.EAST;
+		sliderPanel.add(mainOppacitySlider, gbc);
+		row++;
+		
+		// Row 3: Secondary Opacity
+		gbc.gridx = 0;
+		gbc.gridy = row;
+		gbc.anchor = GridBagConstraints.WEST;
+		sliderPanel.add(new JLabel("Secondary Opacity:"), gbc);
+		gbc.gridx = 1;
+		gbc.anchor = GridBagConstraints.EAST;
+		sliderPanel.add(secondaryOpacitySlider, gbc);
+		row++;
+		
+		// Row 4: Text Opacity
+		gbc.gridx = 0;
+		gbc.gridy = row;
+		gbc.anchor = GridBagConstraints.WEST;
+		sliderPanel.add(new JLabel("Text Opacity:"), gbc);
+		gbc.gridx = 1;
+		gbc.anchor = GridBagConstraints.EAST;
+		sliderPanel.add(textOppacitySlider, gbc);
+		row++;
+		
+		// Row 5: Hover Opacity Add
+		gbc.gridx = 0;
+		gbc.gridy = row;
+		gbc.anchor = GridBagConstraints.WEST;
+		sliderPanel.add(new JLabel("Hover Opacity Add:"), gbc);
+		gbc.gridx = 1;
+		gbc.anchor = GridBagConstraints.EAST;
+		sliderPanel.add(hoverOpacityMultSlider, gbc);
 		
 		
 		add(sliderPanel, BorderLayout.CENTER);
 		
-		setSize(600, 500);
-		setLocationRelativeTo(null); // Center on screen
 		setVisible(true);
 		
 		// on close close
@@ -142,5 +224,14 @@ public class ThemeWindow extends JFrame {
 		Blackout.setInverseOpacity(inverseOppacity);
 		Blackout.setNewColors(secondaryOpacity, mainOpacity, textOpacity, hoverOppacityAdd);
 		Blackout.setNewMainColor(mainColor);
+	}
+	
+	public static Color getMainColor() {
+		return mainColor;
+	}
+	
+	public static void saveLocation(int x, int y) {
+		preferences.putInt("themeScreenX", x);
+		preferences.putInt("themeScreenY", y);
 	}
 }
