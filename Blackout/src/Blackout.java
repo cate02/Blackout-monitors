@@ -76,9 +76,11 @@ public class Blackout {
     
     static void loadActivatedButtons() {
         activatedButtons = preferences.get("activatedButtons", "");
+        // TODO: fix
         String[] parts = activatedButtons.split(",");
-        isBtnOn = new boolean[parts.length];
-        for (int i = 0; i < parts.length; i++) {
+        isBtnOn = new boolean[devices.length];
+        System.out.println(devices.length + " " + parts.length);
+        for (int i = 0; i < devices.length; i++) {
             isBtnOn[i] = parts[i].equals("1");
             triggerBlackout(i, isBtnOn[i]);
             System.out.println(isBtnOn[i] + " " + parts[i]);
@@ -98,14 +100,12 @@ public class Blackout {
         System.out.println("Activated buttons saved: " + activatedButtons);
     }
     
+    private static GraphicsDevice[] devices;
+    
     private void rebuildBoxes() {
         // frame.removeAll();
         btnList.clear();
         blkList.clear();
-        
-        GraphicsEnvironment gEnvironment = GraphicsEnvironment.getLocalGraphicsEnvironment();
-        GraphicsDevice[] devices = gEnvironment.getScreenDevices();
-        Arrays.sort(devices, Comparator.comparingInt(d -> d.getDefaultConfiguration().getBounds().x));
         
         for (int i = 0; i < devices.length; i++) {
             String scrnNum = "scrn" + i;
@@ -162,14 +162,14 @@ public class Blackout {
     }
     
     public void setUpBoxes() {
-        rebuildBoxes();
         // attempting to fix when games fuck resoution like in sexy hiking
         // MonitorWatcher watcher = new MonitorWatcher(this::rebuildBoxes);
         // watcher.start();
         
         GraphicsEnvironment gEnvironment = GraphicsEnvironment.getLocalGraphicsEnvironment();
-        GraphicsDevice[] devices = gEnvironment.getScreenDevices();
+        devices = gEnvironment.getScreenDevices();
         Arrays.sort(devices, Comparator.comparingInt(d -> d.getDefaultConfiguration().getBounds().x));
+        rebuildBoxes();
     }
     
     static void triggerBlackout(int i, boolean state) {
@@ -177,6 +177,16 @@ public class Blackout {
         
         blkList.get(i).setActive(isBtnOn[i]);
         updateColors();
+    }
+    
+    public static boolean validMonitorSpace(int x, int y) {
+        // see whether point is inside or outside of monitors
+        Rectangle virtualBounds = new Rectangle();
+        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        for (GraphicsDevice gd : ge.getScreenDevices()) {
+            virtualBounds = virtualBounds.union(gd.getDefaultConfiguration().getBounds());
+        }
+        return virtualBounds.contains(x, y);
     }
     
     public void setUpGUI() {
@@ -233,6 +243,13 @@ public class Blackout {
         frame.setAlwaysOnTop(true);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLocation(screenBounds[0], screenBounds[1]); // frame.setLocationRelativeTo(null);
+        // if screenbounds is not valid ie outside monitor space, defaulty to null
+        if (validMonitorSpace(screenBounds[0], screenBounds[1])) {
+            frame.setLocation(screenBounds[0], screenBounds[1]);
+        } else {
+            frame.setLocationRelativeTo(null);
+        }
+        
         frame.setLayout(new GridLayout(1 + btnList.size(), 1)); // !! this is where size is defined !!
         isBtnOn = new boolean[btnList.size()];
         int i = 0;

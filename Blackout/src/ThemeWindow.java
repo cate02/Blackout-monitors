@@ -27,7 +27,12 @@ public class ThemeWindow extends JFrame {
 		loadPrefs();
 		
 		setSize(preferences.getInt("themeWidth", 600), preferences.getInt("themeHeight", 500));
-		setLocation(preferences.getInt("themeScreenX", 0), preferences.getInt("themeScreenY", 0));
+		if (Blackout.validMonitorSpace(preferences.getInt("themeScreenX", 0), preferences.getInt("themeScreenY", 0))) {
+			setLocation(preferences.getInt("themeScreenX", 0), preferences.getInt("themeScreenY", 0));
+			
+		} else {
+			setLocationRelativeTo(null);
+		}
 		
 		addComponentListener(new java.awt.event.ComponentAdapter() {
 			@Override
