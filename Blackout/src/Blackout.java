@@ -16,7 +16,7 @@ import java.net.URISyntaxException;
 import java.util.prefs.Preferences;
 
 public class Blackout {
-    
+
     private static JFrame frame;
     private static JButton pop = new JButton("Pop");
     private JPopupMenu pmenu = new JPopupMenu();
@@ -34,7 +34,7 @@ public class Blackout {
     private JMenuItem fade5s = new JMenuItem("Fade for 5 seconds");
     private JMenuItem fade20s = new JMenuItem("Fade for 20 seconds");
     private JMenuItem fade60s = new JMenuItem("Fade for 60 seconds");
-    
+
     private static float hoveryOpacityMult = 20;
     private static float mainOpacity = 10;
     private static float textOpacity = 30;
@@ -42,20 +42,20 @@ public class Blackout {
     private static Color backColor = new Color(100, 50, 200);
     private static Color mainColor;
     private static Color secondaryColor;
-    
+
     private static boolean inverseOppacity = false; // Flag to toggle inverse opacity
-    
+
     private static Preferences preferences;
     private int[] screenBounds = { 0, 0 };
     private static String activatedButtons;
-    
+
     private float contrastPercent = 20f;
-    
+
     public Blackout() {
         preferences = Preferences.userNodeForPackage(Blackout.class);
         screenBounds[0] = preferences.getInt("screenX", 0);
         screenBounds[1] = preferences.getInt("screenY", 0);
-        
+
         frame = new JFrame();
         // if frame moved change preferences
         frame.addComponentListener(new ComponentAdapter() {
@@ -65,15 +65,15 @@ public class Blackout {
                 preferences.putInt("screenY", frame.getY());
             }
         });
-        
+
         // init themewindow
         // ThemeWindow themeWindow = new ThemeWindow();
         // themeWindow.dispose();
-        
+
         pop.addActionListener(listener);
-        
+
     }
-    
+
     static void loadActivatedButtons() {
         activatedButtons = preferences.get("activatedButtons", "");
         // TODO: fix
@@ -81,13 +81,14 @@ public class Blackout {
         isBtnOn = new boolean[devices.length];
         System.out.println(devices.length + " " + parts.length);
         for (int i = 0; i < devices.length; i++) {
-            isBtnOn[i] = parts[i].equals("1");
+            // isBtnOn[i] = parts[i].equals("1");
+            isBtnOn[i] = parts.length > i && parts[i].equals("1");
             triggerBlackout(i, isBtnOn[i]);
-            System.out.println(isBtnOn[i] + " " + parts[i]);
+            // System.out.println(isBtnOn[i] + " " + parts[i]);
         }
         System.out.println("Activated buttons loaded: " + activatedButtons);
     }
-    
+
     void saveActivatedButtons() {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < isBtnOn.length; i++) {
@@ -99,21 +100,21 @@ public class Blackout {
         activatedButtons = sb.toString();
         System.out.println("Activated buttons saved: " + activatedButtons);
     }
-    
+
     private static GraphicsDevice[] devices;
-    
+
     private void rebuildBoxes() {
         // frame.removeAll();
         btnList.clear();
         blkList.clear();
-        
+
         for (int i = 0; i < devices.length; i++) {
             String scrnNum = "scrn" + i;
             JButton btn = new JButton(scrnNum);
             btn.addActionListener(listener);
             btnList.add(btn);
             frame.add(btn);
-            
+
             Rectangle monitor = devices[i].getDefaultConfiguration().getBounds();
             BlackBox blackBox = new BlackBox();
             blackBox.create(monitor);
@@ -128,11 +129,11 @@ public class Blackout {
                         }
                     }
                 }
-                
+
                 // when space pressed box selected frame.setLocation(screenBounds[0],
                 // screenBounds[1]);
                 // if space pressed
-                
+
             });
             blackBox.addKeyListener(new KeyAdapter() {
                 @Override
@@ -146,39 +147,36 @@ public class Blackout {
                         frame.setLocation(centerX, centerY);
                         // ThemeWindow.saveLocation(centerX, centerY);
                         System.out.println(frame.getLocation());
-                        
+
                         // saveActivatedButtons();
                     }
                 }
             });
             blkList.add(blackBox);
         }
-        
-        
-        
-        
+
         frame.revalidate();
         frame.repaint();
     }
-    
+
     public void setUpBoxes() {
         // attempting to fix when games fuck resoution like in sexy hiking
         // MonitorWatcher watcher = new MonitorWatcher(this::rebuildBoxes);
         // watcher.start();
-        
+
         GraphicsEnvironment gEnvironment = GraphicsEnvironment.getLocalGraphicsEnvironment();
         devices = gEnvironment.getScreenDevices();
         Arrays.sort(devices, Comparator.comparingInt(d -> d.getDefaultConfiguration().getBounds().x));
         rebuildBoxes();
     }
-    
+
     static void triggerBlackout(int i, boolean state) {
         isBtnOn[i] = state;
-        
+
         blkList.get(i).setActive(isBtnOn[i]);
         updateColors();
     }
-    
+
     public static boolean validMonitorSpace(int x, int y) {
         // see whether point is inside or outside of monitors
         Rectangle virtualBounds = new Rectangle();
@@ -188,7 +186,7 @@ public class Blackout {
         }
         return virtualBounds.contains(x, y);
     }
-    
+
     public void setUpGUI() {
         boxPMenu.add(fade5s);
         boxPMenu.add(fade20s);
@@ -196,7 +194,7 @@ public class Blackout {
         fade5s.addActionListener(listener);
         fade20s.addActionListener(listener);
         fade60s.addActionListener(listener);
-        
+
         MouseAdapter mThing = new MouseAdapter() {
             public void mousePressed(MouseEvent e) {
                 int x = e.getX();
@@ -207,29 +205,29 @@ public class Blackout {
             }
         };
         frame.addMouseListener(mThing);
-        
+
         MouseAdapter mThing2 = new MouseAdapter() {
             public void mouseEntered(MouseEvent e) {
                 isHovering = true;
                 updateColors();
             }
-            
+
             public void mouseExited(MouseEvent e) {
                 isHovering = false;
                 updateColors();
             }
         };
-        
+
         frame.addMouseListener(mThing2);
         pop.addMouseListener(mThing2);
-        
+
         frame.addMouseMotionListener(new MouseMotionAdapter() {
-            
+
             public void mouseDragged(MouseEvent e) {
                 frame.setLocation(e.getXOnScreen() - initialClick.x, e.getYOnScreen() - initialClick.y);
             }
         });
-        
+
         pmenu.add(onTop);
         pmenu.add(ptheme);
         // pmenu.add(restart);
@@ -249,7 +247,7 @@ public class Blackout {
         } else {
             frame.setLocationRelativeTo(null);
         }
-        
+
         frame.setLayout(new GridLayout(1 + btnList.size(), 1)); // !! this is where size is defined !!
         isBtnOn = new boolean[btnList.size()];
         int i = 0;
@@ -262,7 +260,7 @@ public class Blackout {
             btn.setOpaque(true);
             i++;
         }
-        
+
         pop.setFocusable(false);
         pop.setBorderPainted(false);
         pop.setContentAreaFilled(false);
@@ -271,7 +269,7 @@ public class Blackout {
         frame.setUndecorated(true);
         frame.pack();
     }
-    
+
     public static void main(String[] args) {
         Blackout box = new Blackout();
         setNewMainColor(ThemeWindow.getMainColor());
@@ -281,18 +279,18 @@ public class Blackout {
         loadActivatedButtons();
         frame.setVisible(true);
     }
-    
+
     ActionListener listener = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
             String comm = e.getActionCommand();
             // System.out.println("|" + comm);
-            
+
             if (comm.contains("scrn")) {
                 int btnStrnNum = Integer.parseInt(String.valueOf(comm.charAt(comm.length() - 1)));
                 triggerBlackout(btnStrnNum, !isBtnOn[btnStrnNum]);
                 saveActivatedButtons();
-                
+
             } else if (comm.contains("On top")) {
                 if (!isTop) {
                     frame.setAlwaysOnTop(true);
@@ -308,7 +306,7 @@ public class Blackout {
                     frames.setAlwaysOnTop(true);
                     frames.setAlwaysOnTop(false);
                 }
-                
+
             } else if (comm.equals("Theme")) {
                 ThemeWindow themeWindow = new ThemeWindow();
             } else if (comm.equals("Close")) {
@@ -323,10 +321,10 @@ public class Blackout {
             } else if (comm.equals("Fade for 60 seconds")) {
                 System.out.println("Fade for 60 seconds");
             }
-            
+
         }
     };
-    
+
     public boolean notSorted(GraphicsDevice[] arr) {// but, highest->lowest
         int points = 0;
         for (int i = 0; i < arr.length - 1; i++) {
@@ -343,7 +341,7 @@ public class Blackout {
         else
             return true;
     }
-    
+
     public static void printArr(int[] arr) {
         System.out.printf("{%3d\n", arr[0]);
         for (int i = 1; i < arr.length; i++) {
@@ -351,24 +349,24 @@ public class Blackout {
         }
         System.out.println("}");
     }
-    
+
     public void restartApplication() {
         try {
-            
+
             final String javaBin = System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
             final File currentJar = new File(
                     Blackout.class.getProtectionDomain().getCodeSource().getLocation().toURI());
-            
+
             /* is it a jar file? */
             if (!currentJar.getName().endsWith(".jar"))
                 return;
-            
+
             /* Build command: java -jar application.jar */
             final ArrayList<String> command = new ArrayList<String>();
             command.add(javaBin);
             command.add("-jar");
             command.add(currentJar.getPath());
-            
+
             final ProcessBuilder builder = new ProcessBuilder(command);
             builder.start();
             System.exit(0);
@@ -380,31 +378,31 @@ public class Blackout {
             e.printStackTrace();
         }
     }
-    
+
     public static void setInverseOpacity(boolean inverse) {
         inverseOppacity = inverse;
         updateColors();
     }
-    
+
     private static Color changeColor(Color color, float opacity) {
         // Clamp opacity between 0 and 100
         opacity = Math.max(0, Math.min(opacity, 100));
-        
+
         float blendFactor = opacity / 100f;
-        
+
         int r = (int) (color.getRed() + (255 - color.getRed()) * blendFactor);
         int g = (int) (color.getGreen() + (255 - color.getGreen()) * blendFactor);
         int b = (int) (color.getBlue() + (255 - color.getBlue()) * blendFactor);
-        
+
         if (inverseOppacity) {
             r = (int) (color.getRed() - (color.getRed() * blendFactor));
             g = (int) (color.getGreen() - (color.getGreen() * blendFactor));
             b = (int) (color.getBlue() - (color.getBlue() * blendFactor));
         }
-        
+
         return new Color(r, g, b);
     }
-    
+
     static void setNewColors(float secondaryOpacity, float mainOpacity, float textOpacity, float hoverOpacityMult) {
         // System.out.println(secondaryColorMult + " " + mainOpacity + " " + textOpacity
         // + " " + hoverOppacityAdd);
@@ -414,23 +412,21 @@ public class Blackout {
         Blackout.hoveryOpacityMult = hoverOpacityMult;
         updateColors();
     }
-    
+
     static void setNewMainColor(Color backColor) {
         Blackout.backColor = backColor;
         updateColors();
     }
-    
-    
+
     static void updateColors() {
-        
+
         mainColor = changeColor(backColor, mainOpacity);
         secondaryColor = changeColor(backColor, secondaryOpacity);
         // hoverColor = changeColor(mainColor, mainOpacity + hoverOppacityAdd);
         // hoverSecondaryColor = changeColor(secondaryColor, (mainOpacity +
         // hoverOppacityAdd) * secondaryColorMult);
         Color textColor = changeColor(backColor, textOpacity);
-        
-        
+
         Color color1 = mainColor; // lighter
         Color color2 = secondaryColor; // darker
         Color color3 = textColor; // lightest, border+text
@@ -442,7 +438,7 @@ public class Blackout {
         frame.getRootPane().setBorder(BorderFactory.createMatteBorder(15, 2, 2, 2, color3));
         pop.setForeground(color3);
         pop.setBackground(color1);
-        
+
         for (int i = 0; i < btnList.size(); i++) {
             blkList.get(i).setColor(backColor);
             JButton btn = btnList.get(i);
